@@ -4,25 +4,23 @@ from PIL import Image
 from io import BytesIO
 
 def get_product_info(code_article, marque):
-    base_urls = {
-        "ATMOSPHERA": "https://www.atmosphera.com/",
-        "HESPERIDE": "https://www.hesperide.com/",
-        "FIVE": "https://www.5five.com/"
+    redirect_urls = {
+        "ATMOSPHERA": f"https://www.atmosphera.com/product/search?q={code_article}",
+        "HESPERIDE": f"https://www.hesperide.com/product/search?q={code_article}",
+        "FIVE": f"https://www.5five.com/product/search?q={code_article}"
     }
 
-    url = base_urls[marque] + "recherche?query=" + code_article
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
+    search_url = redirect_urls[marque]
+    session = requests.Session()
+    response = session.get(search_url, allow_redirects=True)
 
-    link = soup.find("a", href=True)
-    if not link:
+    if response.status_code != 200:
         return None, None
 
-    product_page = requests.get(link['href'])
-    product_soup = BeautifulSoup(product_page.text, 'html.parser')
+    soup = BeautifulSoup(response.text, 'html.parser')
 
-    image_tag = product_soup.find("img", {"class": "product-cover"})
-    libelle_tag = product_soup.find("h1")
+    image_tag = soup.find("img", {"class": "product-cover"})
+    libelle_tag = soup.find("h1")
 
     if not image_tag or not libelle_tag:
         return None, None
@@ -30,5 +28,5 @@ def get_product_info(code_article, marque):
     image_url = image_tag["src"]
     libelle = libelle_tag.text.strip()
 
-    image_data = requests.get(image_url).content
+    image_data = session.get(image_url).content
     return Image.open(BytesIO(image_data)), libelle
