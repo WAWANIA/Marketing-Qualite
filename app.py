@@ -15,4 +15,4 @@ if st.button("Générer illustration") and code_article and marque:
             final_image = process_image_and_generate_visual(produit_image, code_article, libelle)
             st.image(final_image, caption="Illustration qualité générée", use_column_width=True)
         else:
-            st.error("Produit non trouvé.")
+            st.error("Produit non trouvé ou structure HTML incompatible.")
