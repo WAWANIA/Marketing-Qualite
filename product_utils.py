@@ -31,16 +31,21 @@ def get_product_info(code_article, marque):
         if not a["href"].startswith("javascript") and not a["href"].startswith("#")
     ]
 
+    debug_log.append(f"{len(candidate_links)} liens détectés, test des 10 premiers.")
+
     product_url = None
-    for link in candidate_links:
+    for link in candidate_links[:10]:  # LIMITÉ À 10 LIENS MAXIMUM
         full_url = link if link.startswith("http") else base_urls[marque].split("/recherche")[0] + link
-        product_page = session.get(full_url, headers=headers)
-        page_soup = BeautifulSoup(product_page.text, 'html.parser')
-        image_tag = page_soup.find("img", {"class": "product-cover"})
-        libelle_tag = page_soup.find("h1")
-        if image_tag and libelle_tag:
-            product_url = full_url
-            break
+        try:
+            product_page = session.get(full_url, headers=headers)
+            page_soup = BeautifulSoup(product_page.text, 'html.parser')
+            image_tag = page_soup.find("img", {"class": "product-cover"})
+            libelle_tag = page_soup.find("h1")
+            if image_tag and libelle_tag:
+                product_url = full_url
+                break
+        except Exception as e:
+            debug_log.append(f"Erreur sur lien {full_url} : {e}")
 
     if not product_url:
         debug_log.append("Aucune fiche produit valide trouvée (image + libellé manquants).")
