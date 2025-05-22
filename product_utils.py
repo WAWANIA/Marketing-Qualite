@@ -47,7 +47,7 @@ def get_product_info(code_article, marque):
     image_data = session.get(image_url, headers=headers).content
 
     image = Image.open(BytesIO(image_data))
-    image.verify()  # Vérifie que l’image est lisible
-    image = Image.open(BytesIO(image_data))  # Recharger pour usage
+    image.verify()
+    image = Image.open(BytesIO(image_data))
 
     return image, libelle
