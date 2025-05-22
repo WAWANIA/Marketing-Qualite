@@ -12,12 +12,18 @@ marque = st.selectbox("Marque", ["ATMOSPHERA", "HESPERIDE", "FIVE"])
 if st.button("Générer illustration") and code_article and marque:
     with st.spinner("Traitement en cours..."):
         try:
-            produit_image, libelle = get_product_info(code_article, marque)
+            st.info("Recherche du produit en cours...")
+            produit_image, libelle, debug_info = get_product_info(code_article, marque)
+
+            st.write("**Étapes de récupération :**")
+            for info in debug_info:
+                st.write(f"- {info}")
+
             if produit_image:
+                st.image(produit_image, caption="Image brute récupérée", use_column_width=True)
                 final_image = process_image_and_generate_visual(produit_image, code_article, libelle)
                 st.image(final_image, caption="Illustration qualité générée", use_column_width=True)
 
-                # Convertir l'image en buffer pour téléchargement
                 buffer = BytesIO()
                 final_image.save(buffer, format="PNG")
                 buffer.seek(0)
@@ -30,4 +36,4 @@ if st.button("Générer illustration") and code_article and marque:
             else:
                 st.error("Produit non trouvé ou structure HTML incompatible.")
         except Exception as e:
-            st.error(f"Erreur inattendue : {e}")
+            st.exception(e)

@@ -4,6 +4,7 @@ from PIL import Image
 from io import BytesIO
 
 def get_product_info(code_article, marque):
+    debug_log = []
     base_urls = {
         "ATMOSPHERA": "https://www.atmosphera.com/recherche?query=",
         "HESPERIDE": "https://www.hesperide.com/recherche?query=",
@@ -11,43 +12,59 @@ def get_product_info(code_article, marque):
     }
 
     if marque not in base_urls:
-        return None, None
+        debug_log.append("Marque non reconnue.")
+        return None, None, debug_log
 
     search_url = base_urls[marque] + code_article
+    debug_log.append(f"URL de recherche : {search_url}")
     headers = {"User-Agent": "Mozilla/5.0"}
     session = requests.Session()
     response = session.get(search_url, headers=headers)
 
     if response.status_code != 200:
-        return None, None
+        debug_log.append(f"Échec de la requête de recherche : {response.status_code}")
+        return None, None, debug_log
 
     soup = BeautifulSoup(response.text, 'html.parser')
     product_link_tag = soup.find("a", href=True)
     if not product_link_tag:
-        return None, None
+        debug_log.append("Aucun lien produit trouvé dans la page de résultats.")
+        return None, None, debug_log
 
     product_url = product_link_tag["href"]
     if not product_url.startswith("http"):
         domain = base_urls[marque].split("/recherche")[0]
         product_url = domain + product_url
+    debug_log.append(f"Lien produit : {product_url}")
 
     product_page = session.get(product_url, headers=headers)
     if product_page.status_code != 200:
-        return None, None
+        debug_log.append(f"Échec de chargement de la page produit : {product_page.status_code}")
+        return None, None, debug_log
 
     product_soup = BeautifulSoup(product_page.text, 'html.parser')
     image_tag = product_soup.find("img", {"class": "product-cover"})
     libelle_tag = product_soup.find("h1")
 
     if not image_tag or not libelle_tag:
-        return None, None
+        debug_log.append("Image ou libellé introuvables sur la fiche produit.")
+        return None, None, debug_log
 
     image_url = image_tag["src"]
+    if not image_url.startswith("http"):
+        domain = base_urls[marque].split("/recherche")[0]
+        image_url = domain + image_url
+    debug_log.append(f"Image URL : {image_url}")
+
+    try:
+        image_data = session.get(image_url, headers=headers).content
+        image = Image.open(BytesIO(image_data))
+        image.verify()
+        image = Image.open(BytesIO(image_data))
+        debug_log.append("Image chargée et vérifiée avec succès.")
+    except Exception as e:
+        debug_log.append(f"Erreur lors du chargement de l'image : {e}")
+        return None, None, debug_log
+
     libelle = libelle_tag.text.strip()
-    image_data = session.get(image_url, headers=headers).content
-
-    image = Image.open(BytesIO(image_data))
-    image.verify()
-    image = Image.open(BytesIO(image_data))
-
-    return image, libelle
+    return image, libelle, debug_log
