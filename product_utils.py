@@ -22,8 +22,6 @@ def get_product_info(code_article, marque):
         return None, None
 
     soup = BeautifulSoup(response.text, 'html.parser')
-
-    # Trouver le lien vers la fiche produit
     product_link_tag = soup.find("a", href=True)
     if not product_link_tag:
         return None, None
@@ -48,4 +46,8 @@ def get_product_info(code_article, marque):
     libelle = libelle_tag.text.strip()
     image_data = session.get(image_url, headers=headers).content
 
-    return Image.open(BytesIO(image_data)), libelle
+    image = Image.open(BytesIO(image_data))
+    image.verify()  # Vérifie que l’image est lisible
+    image = Image.open(BytesIO(image_data))  # Recharger pour usage
+
+    return image, libelle
