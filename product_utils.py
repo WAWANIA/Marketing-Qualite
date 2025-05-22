@@ -26,12 +26,13 @@ def get_product_info(code_article, marque):
         return None, None, debug_log
 
     soup = BeautifulSoup(response.text, 'html.parser')
-    product_link_tag = soup.find("a", href=True)
-    if not product_link_tag:
-        debug_log.append("Aucun lien produit trouvé dans la page de résultats.")
+    product_links = [a["href"] for a in soup.find_all("a", href=True) if "/produit/" in a["href"]]
+
+    if not product_links:
+        debug_log.append("Aucun lien de fiche produit trouvé dans la page de résultats.")
         return None, None, debug_log
 
-    product_url = product_link_tag["href"]
+    product_url = product_links[0]
     if not product_url.startswith("http"):
         domain = base_urls[marque].split("/recherche")[0]
         product_url = domain + product_url
