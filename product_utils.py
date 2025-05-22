@@ -26,30 +26,27 @@ def get_product_info(code_article, marque):
         return None, None, debug_log
 
     soup = BeautifulSoup(response.text, 'html.parser')
-    product_links = [a["href"] for a in soup.find_all("a", href=True) if "/produit/" in a["href"]]
+    candidate_links = [a["href"] for a in soup.find_all("a", href=True)]
 
-    if not product_links:
-        debug_log.append("Aucun lien de fiche produit trouvé dans la page de résultats.")
+    product_url = None
+    for link in candidate_links:
+        full_url = link if link.startswith("http") else base_urls[marque].split("/recherche")[0] + link
+        product_page = session.get(full_url, headers=headers)
+        page_soup = BeautifulSoup(product_page.text, 'html.parser')
+        image_tag = page_soup.find("img", {"class": "product-cover"})
+        libelle_tag = page_soup.find("h1")
+        if image_tag and libelle_tag:
+            product_url = full_url
+            break
+
+    if not product_url:
+        debug_log.append("Aucune fiche produit valide trouvée (image + libellé manquants).")
         return None, None, debug_log
 
-    product_url = product_links[0]
-    if not product_url.startswith("http"):
-        domain = base_urls[marque].split("/recherche")[0]
-        product_url = domain + product_url
-    debug_log.append(f"Lien produit : {product_url}")
-
-    product_page = session.get(product_url, headers=headers)
-    if product_page.status_code != 200:
-        debug_log.append(f"Échec de chargement de la page produit : {product_page.status_code}")
-        return None, None, debug_log
-
+    debug_log.append(f"Lien fiche produit retenu : {product_url}")
     product_soup = BeautifulSoup(product_page.text, 'html.parser')
     image_tag = product_soup.find("img", {"class": "product-cover"})
     libelle_tag = product_soup.find("h1")
-
-    if not image_tag or not libelle_tag:
-        debug_log.append("Image ou libellé introuvables sur la fiche produit.")
-        return None, None, debug_log
 
     image_url = image_tag["src"]
     if not image_url.startswith("http"):
