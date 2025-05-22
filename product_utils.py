@@ -26,7 +26,10 @@ def get_product_info(code_article, marque):
         return None, None, debug_log
 
     soup = BeautifulSoup(response.text, 'html.parser')
-    candidate_links = [a["href"] for a in soup.find_all("a", href=True)]
+    candidate_links = [
+        a["href"] for a in soup.find_all("a", href=True)
+        if not a["href"].startswith("javascript") and not a["href"].startswith("#")
+    ]
 
     product_url = None
     for link in candidate_links:
